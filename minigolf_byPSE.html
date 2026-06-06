@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Мини-гольф</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#ffffff;--bg2:#f5f5f3;--bg3:#eeede9;
+    --text:#1a1a1a;--text2:#666;--text3:#999;
+    --border:#e0dfd9;--border2:#c8c7c0;
+    --green:#2d6a4f;--green-bg:#e8f5ee;--green-light:#d1ead9;
+    --red:#c0392b;--red-bg:#fdf0ee;
+    --radius:12px;--radius-sm:8px;
+  }
+  @media(prefers-color-scheme:dark){
+    :root{
+      --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
+      --text:#f0efeb;--text2:#a0a09a;--text3:#666;
+      --border:#3a3a3c;--border2:#555;
+      --green:#4caf7a;--green-bg:#1a3327;--green-light:#1f3d2c;
+    }
+  }
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;padding:0}
+  .screen{display:none;padding:20px;max-width:480px;margin:0 auto}
+  .screen.active{display:block}
+  h1{font-size:24px;font-weight:600;margin-bottom:4px}
+  .sub{color:var(--text2);font-size:14px;margin-bottom:24px}
+  label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:500}
+  input[type=text]{width:100%;padding:12px 14px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:15px;background:var(--bg);color:var(--text);outline:none;transition:border 0.15s}
+  input[type=text]:focus{border-color:var(--green)}
+  .player-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+  .player-row input{flex:1}
+  .icon-btn{width:36px;height:36px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg2);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--text2);flex-shrink:0}
+  .icon-btn:hover{background:var(--bg3)}
+  .btn{display:block;width:100%;padding:14px;border-radius:var(--radius);border:none;font-size:16px;font-weight:600;cursor:pointer;transition:opacity 0.15s}
+  .btn:active{opacity:0.8}
+  .btn-primary{background:var(--green);color:#fff;margin-top:8px}
+  .btn-secondary{background:var(--bg2);color:var(--text);border:1px solid var(--border2);margin-top:8px}
+  .btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border);margin-top:8px;font-size:14px;font-weight:500}
+  .add-player-btn{width:100%;padding:10px;border:1px dashed var(--border2);border-radius:var(--radius-sm);background:transparent;color:var(--text2);font-size:14px;cursor:pointer;margin-bottom:20px}
+  .add-player-btn:hover{background:var(--bg2)}
+  .settings-block{background:var(--bg2);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+  .settings-block label{margin-bottom:8px}
+
+  .hole-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+  .hole-title{font-size:22px;font-weight:700}
+  .hole-progress{font-size:13px;color:var(--text2)}
+  .nav-btn{width:44px;height:44px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg2);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;color:var(--text)}
+  .nav-btn:disabled{opacity:0.3;cursor:default}
+
+  .dots{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px}
+  .dot{width:22px;height:22px;border-radius:50%;border:1px solid var(--border2);background:var(--bg2);font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3)}
+  .dot.done{background:var(--green-light);border-color:var(--green);color:var(--green)}
+  .dot.current{background:var(--green);border-color:var(--green);color:#fff}
+
+  .player-card{background:var(--bg2);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+  .player-info{flex:1}
+  .player-name{font-size:16px;font-weight:600}
+  .player-total{font-size:12px;color:var(--text2);margin-top:2px}
+  .score-picker{display:flex;gap:6px}
+  .score-btn{width:38px;height:38px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--bg3);font-size:16px;font-weight:600;cursor:pointer;color:var(--text);transition:all 0.1s}
+  .score-btn.active{background:var(--green);border-color:var(--green);color:#fff}
+  .score-btn:hover:not(.active){background:var(--green-bg);border-color:var(--green)}
+
+  .nav-row{display:flex;gap:10px;margin-top:16px}
+  .nav-row .btn{margin-top:0;flex:1}
+
+  .result-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+  .result-name{font-size:15px;font-weight:500}
+  .result-score{font-size:20px;font-weight:700}
+  .winner-tag{font-size:11px;background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:20px;margin-left:8px;font-weight:600}
+  .scores-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+  .scores-table th{padding:6px 4px;text-align:center;color:var(--text2);font-weight:500;border-bottom:1px solid var(--border)}
+  .scores-table th:first-child{text-align:left}
+  .scores-table td{padding:5px 4px;text-align:center;border-bottom:1px solid var(--border)}
+  .scores-table td:first-child{text-align:left;font-weight:500}
+  .scores-table .total-col{font-weight:700}
+  .sheet-block{background:var(--bg2);border-radius:var(--radius);padding:16px;margin:16px 0}
+  .sheet-status{font-size:13px;margin-top:8px;padding:8px 12px;border-radius:var(--radius-sm);display:none}
+  .sheet-status.ok{background:var(--green-bg);color:var(--green);display:block}
+  .sheet-status.err{background:var(--red-bg);color:var(--red);display:block}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;font-weight:500;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="screen active" id="setup">
+  <div style="padding-top:32px">
+  <h1>⛳ Мини-гольф</h1>
+  <p class="sub">Настрой игру и поехали</p>
+
+  <label>Игроки</label>
+  <div id="player-list"></div>
+  <button class="add-player-btn" onclick="addPlayer()">+ Добавить игрока</button>
+
+  <div class="settings-block">
+    <label>Google Sheets (необязательно)</label>
+    <input type="text" id="sheet-url" placeholder="URL вашего Apps Script веб-хука" style="font-size:13px" />
+    <p style="font-size:12px;color:var(--text3);margin-top:6px">Как настроить — см. инструкцию внутри файла</p>
+  </div>
+
+  <button class="btn btn-primary" onclick="startGame()">Начать игру →</button>
+  </div>
+</div>
+
+<div class="screen" id="game">
+  <div style="padding-top:20px">
+  <div class="hole-header">
+    <button class="nav-btn" id="prev-btn" onclick="prevHole()">←</button>
+    <div style="text-align:center">
+      <div class="hole-title" id="hole-label">Лунка 1</div>
+      <div class="hole-progress" id="hole-progress">из 18</div>
+    </div>
+    <button class="nav-btn" id="next-btn2" onclick="nextHole()">→</button>
+  </div>
+
+  <div class="dots" id="dots"></div>
+  <div id="players-grid"></div>
+
+  <div class="nav-row">
+    <button class="btn btn-secondary" onclick="prevHole()">← Назад</button>
+    <button class="btn btn-primary" id="next-btn" onclick="nextHole()">Далее →</button>
+  </div>
+  </div>
+</div>
+
+<div class="screen" id="results">
+  <div style="padding-top:20px">
+  <h1>Итоги</h1>
+  <p class="sub" id="game-date"></p>
+  <div id="podium"></div>
+  <div style="overflow-x:auto;margin-top:16px">
+    <div id="scores-table-wrap"></div>
+  </div>
+
+  <div class="sheet-block" id="sheet-block" style="display:none">
+    <div style="font-size:14px;font-weight:500;margin-bottom:8px">📊 Сохранить в Google Sheets</div>
+    <button class="btn btn-primary" style="margin-top:0;font-size:14px" onclick="saveToSheets()">Сохранить результаты</button>
+    <div class="sheet-status" id="sheet-status"></div>
+  </div>
+
+  <button class="btn btn-outline" onclick="newGame()">↺ Новая игра</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let players = ['', ''];
+let scores = [];
+let currentHole = 0;
+let sheetUrl = '';
+let roundNumber = 1;
+const HOLES = 18;
+const MAX_SCORE = 5;
+
+function getTodayKey() {
+  const d = new Date();
+  return `golf_round_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
+}
+
+function getNextRound() {
+  try {
+    const key = getTodayKey();
+    const n = parseInt(localStorage.getItem(key) || '0') + 1;
+    localStorage.setItem(key, n);
+    return n;
+  } catch(e) { return 1; }
+}
+
+function renderSetup() {
+  const list = document.getElementById('player-list');
+  list.innerHTML = players.map((p, i) => `
+    <div class="player-row">
+      <input type="text" placeholder="Игрок ${i+1}" value="${p}" oninput="players[${i}]=this.value" />
+      ${players.length > 1 ? `<button class="icon-btn" onclick="removePlayer(${i})">×</button>` : ''}
+    </div>
+  `).join('');
+}
+
+function addPlayer() {
+  if (players.length < 8) { players.push(''); renderSetup(); }
+}
+
+function removePlayer(i) {
+  players.splice(i, 1); renderSetup();
+}
+
+function startGame() {
+  const inputs = document.querySelectorAll('#player-list input');
+  players = Array.from(inputs).map((inp, i) => inp.value.trim() || `Игрок ${i+1}`);
+  sheetUrl = document.getElementById('sheet-url').value.trim();
+  scores = players.map(() => Array(HOLES).fill(0));
+  currentHole = 0;
+  roundNumber = getNextRound();
+  show('game');
+  renderGame();
+}
+
+function renderGame() {
+  document.getElementById('hole-label').textContent = `Лунка ${currentHole + 1}`;
+  document.getElementById('hole-progress').textContent = `из ${HOLES}`;
+  document.getElementById('prev-btn').disabled = currentHole === 0;
+
+  const isLast = currentHole === HOLES - 1;
+  document.getElementById('next-btn').textContent = isLast ? 'Итоги →' : 'Далее →';
+  document.getElementById('next-btn2').textContent = isLast ? '⚑' : '→';
+
+  const dots = document.getElementById('dots');
+  dots.innerHTML = Array.from({length: HOLES}, (_, i) => {
+    const allDone = scores.every(s => s[i] > 0);
+    const cls = i === currentHole ? 'current' : (allDone ? 'done' : '');
+    return `<div class="dot ${cls}" onclick="goToHole(${i})">${i+1}</div>`;
+  }).join('');
+
+  const grid = document.getElementById('players-grid');
+  grid.innerHTML = players.map((name, pi) => {
+    const total = scores[pi].reduce((a,b)=>a+b,0);
+    const cur = scores[pi][currentHole];
+    const btns = Array.from({length: MAX_SCORE}, (_, v) => {
+      const val = v + 1;
+      return `<button class="score-btn ${cur===val?'active':''}" onclick="setScore(${pi},${val})">${val}</button>`;
+    }).join('');
+    return `
+      <div class="player-card">
+        <div class="player-info">
+          <div class="player-name">${name}</div>
+          <div class="player-total">Всего: ${total || '—'}</div>
+        </div>
+        <div class="score-picker">${btns}</div>
+      </div>`;
+  }).join('');
+}
+
+function setScore(pi, val) {
+  scores[pi][currentHole] = val;
+  renderGame();
+}
+
+function goToHole(i) { currentHole = i; renderGame(); }
+function prevHole() { if (currentHole > 0) { currentHole--; renderGame(); } }
+function nextHole() {
+  if (currentHole === HOLES - 1) { showResults(); return; }
+  currentHole++; renderGame();
+}
+
+function showResults() {
+  show('results');
+  const now = new Date();
+  document.getElementById('game-date').textContent = now.toLocaleDateString('ru-RU', {day:'numeric',month:'long',year:'numeric'}) + ' · ' + now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) + ` · Партия ${roundNumber}`;
+
+  const totals = players.map((_, i) => scores[i].reduce((a,b)=>a+b,0));
+  const minTotal = Math.min(...totals.filter(t => t > 0));
+
+  const podium = document.getElementById('podium');
+  const sorted = players.map((n,i)=>({name:n,total:totals[i],idx:i})).sort((a,b)=>a.total-b.total);
+  podium.innerHTML = sorted.map(p => `
+    <div class="result-row">
+      <span class="result-name">${p.name}${p.total===minTotal&&p.total>0?'<span class="winner-tag">победитель</span>':''}</span>
+      <span class="result-score">${p.total||'—'}</span>
+    </div>`).join('');
+
+  let tableHtml = `<table class="scores-table"><thead><tr><th>Игрок</th>`;
+  for (let h=1;h<=HOLES;h++) tableHtml += `<th>${h}</th>`;
+  tableHtml += `<th>∑</th></tr></thead><tbody>`;
+  players.forEach((name, pi) => {
+    tableHtml += `<tr><td>${name}</td>`;
+    scores[pi].forEach(s => { tableHtml += `<td>${s||'—'}</td>`; });
+    tableHtml += `<td class="total-col">${totals[pi]||'—'}</td></tr>`;
+  });
+  tableHtml += `</tbody></table>`;
+  document.getElementById('scores-table-wrap').innerHTML = tableHtml;
+
+  const block = document.getElementById('sheet-block');
+  block.style.display = sheetUrl ? 'block' : 'none';
+  document.getElementById('sheet-status').className = 'sheet-status';
+  document.getElementById('sheet-status').textContent = '';
+}
+
+async function saveToSheets() {
+  const status = document.getElementById('sheet-status');
+  status.className = 'sheet-status';
+  status.textContent = 'Отправляю...';
+  status.style.display = 'block';
+
+  const now = new Date().toLocaleString('ru-RU');
+  const totals = players.map((_, i) => scores[i].reduce((a,b)=>a+b,0));
+
+  const rows = players.map((name, pi) => ({
+    date: now,
+    round: roundNumber,
+    player: name,
+    total: totals[pi],
+    holes: scores[pi]
+  }));
+
+  try {
+    await fetch(sheetUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({rows})
+    });
+    status.className = 'sheet-status ok';
+    status.textContent = '✓ Результаты сохранены в таблицу';
+    toast('Сохранено в Google Sheets');
+  } catch(e) {
+    status.className = 'sheet-status err';
+    status.textContent = '✗ Ошибка: проверь URL скрипта';
+  }
+}
+
+function newGame() {
+  players = ['', ''];
+  show('setup');
+  renderSetup();
+}
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+renderSetup();
+</script>
+
+<!--
+═══════════════════════════════════════════════
+ИНСТРУКЦИЯ: КАК НАСТРОИТЬ ЗАПИСЬ В GOOGLE SHEETS
+═══════════════════════════════════════════════
+
+ШАГ 1. Создай Google Таблицу
+  - Зайди на sheets.google.com, создай новую таблицу
+  - В первой строке сделай заголовки:
+    A1: Дата  |  B1: Партия  |  C1: Игрок  |  D1: Итого  |  E1: Л1  |  F1: Л2  |  ...  |  V1: Л18
+
+ШАГ 2. Открой Apps Script
+  - В таблице: меню Расширения → Apps Script
+  - Удали весь код и вставь этот:
+
+---
+
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  
+  data.rows.forEach(function(row) {
+    var r = [row.date, row.round, row.player, row.total];
+    for (var i = 0; i < 18; i++) {
+      r.push(row.holes[i] || '');
+    }
+    sheet.appendRow(r);
+  });
+  
+  return ContentService.createTextOutput('ok');
+}
+
+---
+
+ШАГ 3. Опубликуй скрипт
+  - Нажми "Развернуть" → "Новое развёртывание"
+  - Тип: Веб-приложение
+  - Выполнять как: Я (свой аккаунт)
+  - Кто имеет доступ: Все
+  - Нажми "Развернуть", скопируй URL
+
+ШАГ 4. Вставь URL в приложение
+  - На стартовом экране вставь URL в поле Google Sheets
+  - После каждой игры нажимай "Сохранить результаты"
+
+Готово! Каждый игрок и каждая лунка — отдельная строка в таблице.
+═══════════════════════════════════════════════
+-->
+</body>
+</html>
