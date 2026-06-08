@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -7,21 +8,21 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{
-    --bg:#ffffff;--bg2:#f5f5f3;--bg3:#eeede9;
-    --text:#1a1a1a;--text2:#666;--text3:#999;
-    --border:#e0dfd9;--border2:#c8c7c0;
-    --green:#2d6a4f;--green-bg:#e8f5ee;--green-light:#d1ead9;
-    --red:#c0392b;--red-bg:#fdf0ee;
-    --radius:12px;--radius-sm:8px;
+    --bg:#ffffff;--bg2:#f0fdf4;--bg3:#dcfce7;
+    --text:#111827;--text2:#4b5563;--text3:#9ca3af;
+    --border:#e5e7eb;--border2:#d1d5db;
+    --green:#16a34a;--green-bg:#f0fdf4;--green-light:#bbf7d0;
+    --red:#dc2626;--red-bg:#fef2f2;
+    --radius:14px;--radius-sm:9px;
   }
-  @media(prefers-color-scheme:dark){
-    :root{
-      --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
-      --text:#f0efeb;--text2:#a0a09a;--text3:#666;
-      --border:#3a3a3c;--border2:#555;
-      --green:#4caf7a;--green-bg:#1a3327;--green-light:#1f3d2c;
-    }
+  [data-theme="dark"]{
+    --bg:#0f172a;--bg2:#1e293b;--bg3:#273449;
+    --text:#f1f5f9;--text2:#94a3b8;--text3:#475569;
+    --border:#1e293b;--border2:#334155;
+    --green:#4ade80;--green-bg:#052e16;--green-light:#14532d;
+    --red:#f87171;--red-bg:#2d0a0a;
   }
+  html{transition:background 0.2s}
   body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;padding:0}
   .screen{display:none;padding:20px;max-width:480px;margin:0 auto}
   .screen.active{display:block}
@@ -43,6 +44,10 @@
   .add-player-btn:hover{background:var(--bg2)}
   .settings-block{background:var(--bg2);border-radius:var(--radius);padding:16px;margin-bottom:16px}
   .settings-block label{margin-bottom:8px}
+
+  .topbar{display:flex;justify-content:flex-end;padding:12px 20px 0;max-width:480px;margin:0 auto}
+  .theme-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border2);background:var(--bg2);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+  .theme-btn:hover{background:var(--bg3)}
 
   .hole-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:12px;border-bottom:1px solid var(--border)}
   .hole-title{font-size:22px;font-weight:700}
@@ -81,14 +86,37 @@
   .sheet-status{font-size:13px;margin-top:8px;padding:8px 12px;border-radius:var(--radius-sm);display:none}
   .sheet-status.ok{background:var(--green-bg);color:var(--green);display:block}
   .sheet-status.err{background:var(--red-bg);color:var(--red);display:block}
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;font-weight:500;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px}
+  .toggle-label{font-size:15px;font-weight:500;color:var(--text)}
+  .toggle-sub{font-size:12px;color:var(--text3);margin-top:2px}
+  .toggle{position:relative;width:46px;height:26px;flex-shrink:0}
+  .toggle input{opacity:0;width:0;height:0}
+  .toggle-track{position:absolute;inset:0;background:var(--border2);border-radius:13px;cursor:pointer;transition:background 0.2s}
+  .toggle input:checked + .toggle-track{background:var(--green)}
+  .toggle-track:before{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform 0.2s}
+  .toggle input:checked + .toggle-track:before{transform:translateX(20px)}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:10px 20px;border-radius:24px;font-size:14px;font-weight:500;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:999}
   .toast.show{opacity:1}
 </style>
 </head>
 <body>
 
+<div class="topbar">
+  <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Сменить тему">🌙</button>
+</div>
+
+
+<div id="resume-banner" style="display:none;background:var(--green-bg);border-bottom:1px solid var(--green-light);padding:12px 20px;max-width:480px;margin:0 auto">
+  <div style="font-size:14px;font-weight:600;color:var(--green);margin-bottom:6px">⚡ Есть незавершённая игра</div>
+  <div style="font-size:13px;color:var(--text2);margin-bottom:10px" id="resume-info"></div>
+  <div style="display:flex;gap:8px">
+    <button onclick="resumeGame()" style="flex:1;padding:9px;border-radius:var(--radius-sm);border:none;background:var(--green);color:#fff;font-size:14px;font-weight:600;cursor:pointer">Продолжить</button>
+    <button onclick="discardResume()" style="flex:1;padding:9px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-size:14px;cursor:pointer">Начать заново</button>
+  </div>
+</div>
+
 <div class="screen active" id="setup">
-  <div style="padding-top:32px">
+  <div style="padding-top:16px">
   <h1>⛳ Мини-гольф</h1>
   <p class="sub">Настрой игру и поехали</p>
 
@@ -96,10 +124,15 @@
   <div id="player-list"></div>
   <button class="add-player-btn" onclick="addPlayer()">+ Добавить игрока</button>
 
-  <div class="settings-block">
-    <label>Google Sheets (необязательно)</label>
-    <input type="text" id="sheet-url" placeholder="URL вашего Apps Script веб-хука" style="font-size:13px" />
-    <p style="font-size:12px;color:var(--text3);margin-top:6px">Как настроить — см. инструкцию внутри файла</p>
+  <div class="toggle-row">
+    <div>
+      <div class="toggle-label">Сохранить итог публично</div>
+      <div class="toggle-sub">Результаты запишутся в общую таблицу</div>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" id="save-toggle" checked />
+      <span class="toggle-track"></span>
+    </label>
   </div>
 
   <button class="btn btn-primary" onclick="startGame()">Начать игру →</button>
@@ -152,10 +185,24 @@
 let players = ['', ''];
 let scores = [];
 let currentHole = 0;
-let sheetUrl = '';
+let sheetUrl = 'https://script.google.com/macros/s/AKfycbyVD6ZOU1hlxqeM7o8bDbnwWpWrssSBZA3rW-iQsE4--5fdcf50wr3nPiRHCgq3RNAe/exec';
 let roundNumber = 1;
+let savePublic = true;
 const HOLES = 18;
 const MAX_SCORE = 5;
+
+// Theme
+let isDark = false;
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : '');
+  document.getElementById('theme-btn').textContent = isDark ? '☀️' : '🌙';
+  try { localStorage.setItem('golf_theme', isDark ? 'dark' : 'light'); } catch(e){}
+}
+try {
+  const saved = localStorage.getItem('golf_theme');
+  if (saved === 'dark') { isDark = true; document.documentElement.setAttribute('data-theme','dark'); document.addEventListener('DOMContentLoaded', () => { document.getElementById('theme-btn').textContent = '☀️'; }); }
+} catch(e){}
 
 function getTodayKey() {
   const d = new Date();
@@ -192,7 +239,7 @@ function removePlayer(i) {
 function startGame() {
   const inputs = document.querySelectorAll('#player-list input');
   players = Array.from(inputs).map((inp, i) => inp.value.trim() || `Игрок ${i+1}`);
-  sheetUrl = document.getElementById('sheet-url').value.trim();
+  savePublic = document.getElementById('save-toggle').checked;
   scores = players.map(() => Array(HOLES).fill(0));
   currentHole = 0;
   roundNumber = getNextRound();
@@ -238,16 +285,18 @@ function renderGame() {
 function setScore(pi, val) {
   scores[pi][currentHole] = val;
   renderGame();
+  autosave();
 }
 
-function goToHole(i) { currentHole = i; renderGame(); }
-function prevHole() { if (currentHole > 0) { currentHole--; renderGame(); } }
+function goToHole(i) { currentHole = i; renderGame(); autosave(); }
+function prevHole() { if (currentHole > 0) { currentHole--; renderGame(); autosave(); } }
 function nextHole() {
   if (currentHole === HOLES - 1) { showResults(); return; }
-  currentHole++; renderGame();
+  currentHole++; renderGame(); autosave();
 }
 
 function showResults() {
+  clearAutosave();
   show('results');
   const now = new Date();
   document.getElementById('game-date').textContent = now.toLocaleDateString('ru-RU', {day:'numeric',month:'long',year:'numeric'}) + ' · ' + now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) + ` · Партия ${roundNumber}`;
@@ -275,7 +324,7 @@ function showResults() {
   document.getElementById('scores-table-wrap').innerHTML = tableHtml;
 
   const block = document.getElementById('sheet-block');
-  block.style.display = sheetUrl ? 'block' : 'none';
+  block.style.display = (sheetUrl && savePublic) ? 'block' : 'none';
   document.getElementById('sheet-status').className = 'sheet-status';
   document.getElementById('sheet-status').textContent = '';
 }
@@ -314,6 +363,7 @@ async function saveToSheets() {
 }
 
 function newGame() {
+  clearAutosave();
   players = ['', ''];
   show('setup');
   renderSetup();
@@ -332,6 +382,59 @@ function toast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+
+const SAVE_KEY = 'golf_autosave';
+
+function autosave() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      players, scores, currentHole, sheetUrl, roundNumber, savePublic,
+      savedAt: Date.now()
+    }));
+  } catch(e) {}
+}
+
+function clearAutosave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+}
+
+function checkResume() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (!d.players || !d.scores) return;
+    const holesPlayed = d.scores[0].filter(s => s > 0).length;
+    if (holesPlayed === 0) { clearAutosave(); return; }
+    const ago = Math.round((Date.now() - d.savedAt) / 60000);
+    const agoText = ago < 1 ? 'только что' : ago < 60 ? `${ago} мин назад` : `${Math.round(ago/60)} ч назад`;
+    document.getElementById('resume-info').textContent =
+      `${d.players.join(', ')} · лунка ${d.currentHole + 1} из 18 · ${agoText}`;
+    document.getElementById('resume-banner').style.display = 'block';
+  } catch(e) {}
+}
+
+function resumeGame() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY));
+    players = d.players;
+    scores = d.scores;
+    currentHole = d.currentHole;
+    roundNumber = d.roundNumber || 1;
+    savePublic = d.savePublic !== false;
+    sheetUrl = d.sheetUrl || sheetUrl;
+    document.getElementById('resume-banner').style.display = 'none';
+    show('game');
+    renderGame();
+  } catch(e) {}
+}
+
+function discardResume() {
+  clearAutosave();
+  document.getElementById('resume-banner').style.display = 'none';
+}
+
+checkResume();
 renderSetup();
 </script>
 
