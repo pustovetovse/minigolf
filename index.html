@@ -5,6 +5,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Мини-гольф</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMxNmEzNGEiLz4KICA8cmVjdCB4PSIxMyIgeT0iNyIgd2lkdGg9IjIiIGhlaWdodD0iMTciIHJ4PSIxIiBmaWxsPSIjZmZmIi8+CiAgPHBvbHlnb24gcG9pbnRzPSIxNSw3IDIzLDExIDE1LDE1IiBmaWxsPSIjZmZmIi8+CiAgPGVsbGlwc2UgY3g9IjE2IiBjeT0iMjUiIHJ4PSI1IiByeT0iMiIgZmlsbD0iIzBmN2EzNSIvPgo8L3N2Zz4=" type="image/svg+xml">
+
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -189,7 +191,8 @@ let sheetUrl = 'https://script.google.com/macros/s/AKfycbyVD6ZOU1hlxqeM7o8bDbnwW
 let roundNumber = 1;
 let savePublic = true;
 const HOLES = 18;
-const MAX_SCORE = 5;
+const MAX_SCORE = 6;
+function toRecorded(s) { return s === 6 ? 7 : s; }
 
 // Theme
 let isDark = false;
@@ -265,7 +268,7 @@ function renderGame() {
 
   const grid = document.getElementById('players-grid');
   grid.innerHTML = players.map((name, pi) => {
-    const total = scores[pi].reduce((a,b)=>a+b,0);
+    const total = scores[pi].reduce((a,b)=>a+toRecorded(b),0);
     const cur = scores[pi][currentHole];
     const btns = Array.from({length: MAX_SCORE}, (_, v) => {
       const val = v + 1;
@@ -301,7 +304,7 @@ function showResults() {
   const now = new Date();
   document.getElementById('game-date').textContent = now.toLocaleDateString('ru-RU', {day:'numeric',month:'long',year:'numeric'}) + ' · ' + now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'}) + ` · Партия ${roundNumber}`;
 
-  const totals = players.map((_, i) => scores[i].reduce((a,b)=>a+b,0));
+  const totals = players.map((_, i) => scores[i].reduce((a,b)=>a+toRecorded(b),0));
   const minTotal = Math.min(...totals.filter(t => t > 0));
 
   const podium = document.getElementById('podium');
@@ -317,7 +320,7 @@ function showResults() {
   tableHtml += `<th>∑</th></tr></thead><tbody>`;
   players.forEach((name, pi) => {
     tableHtml += `<tr><td>${name}</td>`;
-    scores[pi].forEach(s => { tableHtml += `<td>${s||'—'}</td>`; });
+    scores[pi].forEach(s => { tableHtml += `<td>${s ? toRecorded(s) : '—'}</td>`; });
     tableHtml += `<td class="total-col">${totals[pi]||'—'}</td></tr>`;
   });
   tableHtml += `</tbody></table>`;
@@ -336,14 +339,14 @@ async function saveToSheets() {
   status.style.display = 'block';
 
   const now = new Date().toLocaleString('ru-RU');
-  const totals = players.map((_, i) => scores[i].reduce((a,b)=>a+b,0));
+  const totals = players.map((_, i) => scores[i].reduce((a,b)=>a+toRecorded(b),0));
 
   const rows = players.map((name, pi) => ({
     date: now,
     round: roundNumber,
     player: name,
     total: totals[pi],
-    holes: scores[pi]
+    holes: scores[pi].map(toRecorded)
   }));
 
   try {
